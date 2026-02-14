@@ -36,7 +36,7 @@ void main() async {
   // Initialize automation with both WebSocket and MCP servers
   await AutomationController.initialize(
     port: 59322,           // WebSocket port
-    mcpPort: 3333,         // MCP HTTP port
+    mcpPort: 59323,        // MCP HTTP port (default: 59323)
     enableMCP: true,       // Enable MCP server
     enableRecording: true,
   );
@@ -51,7 +51,7 @@ After starting your app, connect Claude Code to the MCP server:
 
 ```bash
 # Add MCP server to Claude Code
-claude mcp add --transport http chimera_flutter_ui http://127.0.0.1:3333/mcp
+claude mcp add --transport http chimera_flutter_ui http://127.0.0.1:59323/mcp
 
 # The token will be printed in the console when the app starts
 ```
