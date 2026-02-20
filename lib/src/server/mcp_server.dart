@@ -4,11 +4,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../models/ui_snapshot.dart';
 import '../models/ui_element.dart';
+import '../models/screenshot_result.dart';
 import '../core/function_registry.dart';
 import '../core/behavior_recorder.dart';
 import '../core/replay_engine.dart';
 import '../core/ui_state_capture.dart';
 import '../core/vm_service_integration.dart';
+import '../core/screenshot_service.dart';
 
 /// MCP (Model Context Protocol) HTTP Server
 /// Implements MCP 2025-06-18 specification for Claude Code integration
@@ -304,6 +306,30 @@ class MCPServer {
               'properties': {},
             },
           },
+          {
+            'name': 'ui.capture_screen',
+            'description': 'Capture screenshot of the current app window (PNG format) with structured UI metadata',
+            'inputSchema': {
+              'type': 'object',
+              'properties': {
+                'pixelRatio': {
+                  'type': 'number',
+                  'description': 'Pixel ratio for screenshot resolution (default 1.0)',
+                  'default': 1.0,
+                },
+                'includeMetadata': {
+                  'type': 'boolean',
+                  'description': 'Include structured metadata (route, UI snapshot, recent actions)',
+                  'default': true,
+                },
+                'maxRecentActions': {
+                  'type': 'integer',
+                  'description': 'Number of recent actions to include in metadata (default 10)',
+                  'default': 10,
+                },
+              },
+            },
+          },
         ],
       },
     };
@@ -384,6 +410,9 @@ class MCPServer {
 
       case 'dev.vm_info':
         return await _toolVMInfo();
+
+      case 'ui.capture_screen':
+        return await _toolCaptureScreen(arguments);
 
       default:
         throw Exception('Unknown tool: $toolName');
@@ -653,6 +682,87 @@ class MCPServer {
 
     buffer.writeln('---');
     buffer.writeln('Total: ${snapshot.elements.length} elements, ${snapshot.elements.where((e) => e.actions.isNotEmpty).length} interactive');
+
+    return buffer.toString();
+  }
+
+  /// Tool: ui.capture_screen
+  Future<Map<String, dynamic>> _toolCaptureScreen(Map<String, dynamic> arguments) async {
+    final pixelRatio = (arguments['pixelRatio'] as num?)?.toDouble() ?? 1.0;
+    final includeMetadata = arguments['includeMetadata'] as bool? ?? true;
+    final maxRecentActions = arguments['maxRecentActions'] as int? ?? 10;
+
+    // Check if screenshot service is enabled
+    if (!ScreenshotService.instance.isEnabled()) {
+      throw Exception('Screenshot capture is disabled. Enable it in AutomationController.initialize()');
+    }
+
+    // Check rate limiting
+    if (!ScreenshotService.instance.canCapture()) {
+      throw Exception('Rate limit exceeded. Please wait before capturing another screenshot.');
+    }
+
+    try {
+      final result = await ScreenshotService.instance.captureScreen(
+        pixelRatio: pixelRatio,
+        includeMetadata: includeMetadata,
+        maxRecentActions: maxRecentActions,
+      );
+
+      // Build MCP response with image content
+      final content = <Map<String, dynamic>>[
+        {
+          'type': 'image',
+          'data': result.base64Image,
+          'mimeType': result.mimeType,
+        },
+      ];
+
+      // Add metadata as text content if requested
+      if (includeMetadata && result.metadata != null) {
+        content.add({
+          'type': 'text',
+          'text': _formatScreenshotMetadata(result),
+        });
+      }
+
+      return {'content': content};
+    } catch (e) {
+      throw Exception('Failed to capture screenshot: $e');
+    }
+  }
+
+  /// Format screenshot metadata as readable text
+  String _formatScreenshotMetadata(ScreenshotResult result) {
+    final buffer = StringBuffer();
+    final metadata = result.metadata!;
+
+    buffer.writeln('Screenshot Metadata:');
+    buffer.writeln('---');
+    buffer.writeln('Timestamp: ${result.timestamp.toIso8601String()}');
+    buffer.writeln('Dimensions: ${result.width}x${result.height}');
+    buffer.writeln('Current Route: ${metadata.currentRoute ?? "Unknown"}');
+
+    if (metadata.uiSnapshot != null) {
+      buffer.writeln('');
+      buffer.writeln('UI Elements: ${metadata.uiSnapshot!.elements.length}');
+      buffer.writeln('Interactive Elements: ${metadata.uiSnapshot!.elements.where((e) => e.actions.isNotEmpty).length}');
+    }
+
+    if (metadata.recentActions != null && metadata.recentActions!.isNotEmpty) {
+      buffer.writeln('');
+      buffer.writeln('Recent Actions (${metadata.recentActions!.length}):');
+      for (var i = 0; i < metadata.recentActions!.length; i++) {
+        final action = metadata.recentActions![i];
+        buffer.writeln('  ${i + 1}. ${action.actionType} on "${action.targetLabel}" at ${action.timestamp.toIso8601String()}');
+      }
+    }
+
+    buffer.writeln('');
+    buffer.writeln('Window Info:');
+    metadata.windowInfo.forEach((key, value) {
+      buffer.writeln('  $key: $value');
+    });
 
     return buffer.toString();
   }

@@ -6,6 +6,7 @@ A Flutter library for UI automation with WebSocket and MCP (Model Context Protoc
 
 - **WebSocket Server**: Built-in WebSocket server for remote control
 - **MCP Server**: Model Context Protocol HTTP server for Claude Code integration
+- **Screenshot Capture**: Capture app screenshots as PNG with structured metadata (NEW!)
 - **UI State Capture**: Real-time capture of UI elements from Semantics tree
 - **Function Tracking**: Track and execute callback functions
 - **Behavior Recording**: Record user interactions
@@ -66,6 +67,7 @@ Once connected, you can use these tools in Claude Code:
 - `ui.input_text` - Input text into a field
 - `ui.scroll` - Scroll the interface
 - `ui.get_screen` - Get current screen name
+- `ui.capture_screen` - **NEW!** Capture screenshot of the app window
 - `ui.start_recording` - Start recording user actions
 - `ui.stop_recording` - Stop recording
 - `dev.hot_reload` - Trigger Hot Reload (r)
@@ -88,7 +90,59 @@ Claude: [calls dev.hot_reload]
 ✅ Hot Reload successful
 ```
 
-### 4. Use Tracked Widgets (Optional)
+### 4. Enable Screenshot Capture (NEW!)
+
+To enable screenshot capture, wrap your app with `ScreenshotCapableApp`:
+
+```dart
+import 'package:chimera_flutter_ui_automation/chimera_flutter_ui_automation.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await AutomationController.initialize(
+    port: 59322,
+    enableRecording: true,
+    enableScreenshot: true,        // Enable screenshot capture
+    screenshotRateLimitMs: 1000,   // 1 screenshot per second (default)
+  );
+
+  runApp(
+    ScreenshotCapableApp(          // Wrap your app
+      screenshotKey: AutomationController.screenshotKey,
+      child: const MyApp(),
+    ),
+  );
+}
+```
+
+Now Claude Code can capture screenshots:
+
+```
+You: 请截图当前界面
+Claude: [calls ui.capture_screen]
+[Shows PNG screenshot + metadata]
+
+Current screen: HomePage
+Dimensions: 800x600
+UI Elements: 15 total, 5 interactive
+Recent Actions:
+  1. tap on "Increment" at 2026-02-20T10:30:45
+  2. input_text on "text_input" at 2026-02-20T10:30:50
+```
+
+**Screenshot Tool Parameters:**
+- `pixelRatio` (number, default 1.0): Higher values = higher resolution
+- `includeMetadata` (boolean, default true): Include UI snapshot and recent actions
+- `maxRecentActions` (integer, default 10): Number of recent actions to include
+
+**Security Features:**
+- Rate limiting: 1 screenshot per second (configurable)
+- Manual enable/disable via `enableScreenshot` parameter
+- Localhost-only binding (already enforced by MCP server)
+- Cross-platform support (macOS, iOS, Android, Windows, Linux)
+
+### 5. Use Tracked Widgets (Optional)
 
 Replace standard widgets with tracked versions for better control:
 

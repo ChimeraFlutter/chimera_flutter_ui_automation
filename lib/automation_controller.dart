@@ -6,6 +6,7 @@ import 'src/core/function_registry.dart';
 import 'src/core/behavior_recorder.dart';
 import 'src/core/replay_engine.dart';
 import 'src/core/ui_state_capture.dart';
+import 'src/core/screenshot_service.dart';
 import 'src/models/ui_snapshot.dart';
 
 /// Main controller for the automation library
@@ -14,6 +15,9 @@ class AutomationController {
   static MCPServer? _mcpServer;
   static bool _initialized = false;
 
+  /// GlobalKey for screenshot capture
+  static final GlobalKey screenshotKey = GlobalKey();
+
   /// Initialize the automation library
   static Future<void> initialize({
     int port = 59322,
@@ -21,6 +25,8 @@ class AutomationController {
     String? mcpToken,
     bool enableRecording = true,
     bool enableMCP = true,
+    bool enableScreenshot = true,
+    int screenshotRateLimitMs = 1000,
     BuildContext? context,
   }) async {
     if (_initialized) {
@@ -67,6 +73,17 @@ class AutomationController {
       print('[AutomationController] MCP Server started on port $actualMcpPort');
       print('[AutomationController] Token authentication: DISABLED');
       print('[AutomationController] Connect with: claude mcp add --transport http chimera_flutter_ui http://127.0.0.1:$actualMcpPort/mcp');
+    }
+
+    // Initialize screenshot service
+    if (enableScreenshot) {
+      ScreenshotService.instance.setEnabled(true);
+      ScreenshotService.instance.setRateLimit(screenshotRateLimitMs);
+      ScreenshotService.instance.setScreenshotKey(screenshotKey);
+      print('[AutomationController] Screenshot capture enabled (rate limit: ${screenshotRateLimitMs}ms)');
+    } else {
+      ScreenshotService.instance.setEnabled(false);
+      print('[AutomationController] Screenshot capture disabled');
     }
 
     _initialized = true;

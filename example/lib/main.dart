@@ -8,9 +8,16 @@ void main() async {
   await AutomationController.initialize(
     port: 59322,
     enableRecording: true,
+    enableScreenshot: true,        // Enable screenshot capture
+    screenshotRateLimitMs: 1000,   // 1 screenshot per second
   );
 
-  runApp(const MyApp());
+  runApp(
+    ScreenshotCapableApp(          // Wrap app with screenshot capability
+      screenshotKey: AutomationController.screenshotKey,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
