@@ -6,7 +6,7 @@ A Flutter library for UI automation with WebSocket and MCP (Model Context Protoc
 
 - **WebSocket Server**: Built-in WebSocket server for remote control
 - **MCP Server**: Model Context Protocol HTTP server for Claude Code integration
-- **Screenshot Capture**: Capture app screenshots as PNG with structured metadata (NEW!)
+- **Screenshot Capture**: Capture app screenshots as PNG with structured metadata
 - **UI State Capture**: Real-time capture of UI elements from Semantics tree
 - **Function Tracking**: Track and execute callback functions
 - **Behavior Recording**: Record user interactions
@@ -67,7 +67,7 @@ Once connected, you can use these tools in Claude Code:
 - `ui.input_text` - Input text into a field
 - `ui.scroll` - Scroll the interface
 - `ui.get_screen` - Get current screen name
-- `ui.capture_screen` - **NEW!** Capture screenshot of the app window
+- `ui.capture_screen` - Capture screenshot of the app window
 - `ui.start_recording` - Start recording user actions
 - `ui.stop_recording` - Stop recording
 - `dev.hot_reload` - Trigger Hot Reload (r)
@@ -90,7 +90,7 @@ Claude: [calls dev.hot_reload]
 ✅ Hot Reload successful
 ```
 
-### 4. Enable Screenshot Capture (NEW!)
+### 4. Enable Screenshot Capture
 
 To enable screenshot capture, wrap your app with `ScreenshotCapableApp`:
 
