@@ -29,6 +29,18 @@ class ScreenshotResult {
     this.metadata,
     required this.timestamp,
   });
+
+  /// Convert to JSON for WebSocket responses
+  Map<String, dynamic> toJson() {
+    return {
+      'base64Image': base64Image,
+      'mimeType': mimeType,
+      'width': width,
+      'height': height,
+      'timestamp': timestamp.toIso8601String(),
+      if (metadata != null) 'metadata': metadata!.toJson(),
+    };
+  }
 }
 
 /// Metadata associated with a screenshot
@@ -55,4 +67,16 @@ class ScreenshotMetadata {
     required this.windowInfo,
     required this.timestamp,
   });
+
+  /// Convert to JSON for WebSocket responses
+  Map<String, dynamic> toJson() {
+    return {
+      if (currentRoute != null) 'currentRoute': currentRoute,
+      if (uiSnapshot != null) 'uiSnapshot': uiSnapshot!.toJson(),
+      if (recentActions != null)
+        'recentActions': recentActions!.map((a) => a.toJson()).toList(),
+      'windowInfo': windowInfo,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
 }

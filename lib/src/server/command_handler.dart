@@ -4,7 +4,10 @@ import '../core/ui_state_capture.dart';
 import '../core/function_registry.dart';
 import '../core/behavior_recorder.dart';
 import '../core/replay_engine.dart';
+import '../core/screenshot_service.dart';
 import '../models/recording_session.dart';
+import '../models/screenshot_result.dart';
+import '../exceptions/screenshot_exception.dart';
 import 'protocol.dart';
 
 /// Handles WebSocket commands
@@ -43,6 +46,8 @@ class CommandHandler {
         return _handleStopRecord();
       case 'replay':
         return _handleReplay(request.params);
+      case 'screenshot':
+        return await _handleScreenshot(request.params);
       default:
         return WSResponse.error('Unknown command: ${request.command}');
     }
@@ -151,6 +156,37 @@ class CommandHandler {
       return WSResponse.success(data: result.toJson());
     } catch (e) {
       return WSResponse.error('Failed to replay: $e');
+    }
+  }
+
+  Future<WSResponse> _handleScreenshot(Map<String, dynamic>? params) async {
+    try {
+      // Parse parameters with defaults
+      final pixelRatio = (params?['pixelRatio'] as num?)?.toDouble() ?? 1.0;
+      final includeMetadata = params?['includeMetadata'] as bool? ?? true;
+      final maxRecentActions = params?['maxRecentActions'] as int? ?? 10;
+
+      // Validate pixelRatio
+      if (pixelRatio <= 0 || pixelRatio > 3.0) {
+        return WSResponse.error('pixelRatio must be between 0 and 3.0');
+      }
+
+      // Capture screenshot
+      final result = await ScreenshotService.instance.captureScreen(
+        pixelRatio: pixelRatio,
+        includeMetadata: includeMetadata,
+        maxRecentActions: maxRecentActions,
+      );
+
+      // Return response with screenshot data
+      return WSResponse.success(
+        data: result.toJson(),
+        message: 'Screenshot captured successfully',
+      );
+    } on ScreenshotException catch (e) {
+      return WSResponse.error('Screenshot failed: ${e.message}');
+    } catch (e) {
+      return WSResponse.error('Screenshot failed: $e');
     }
   }
 }
