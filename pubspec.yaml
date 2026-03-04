@@ -4,7 +4,7 @@ version: 0.0.1
 homepage:
 
 environment:
-  sdk: ^3.11.0-185.0.dev
+  sdk: ^3.8.1
   flutter: ">=1.17.0"
 
 dependencies:
@@ -12,8 +12,8 @@ dependencies:
     sdk: flutter
   shelf: ^1.4.0
   shelf_web_socket: ^2.0.0
-  web_socket_channel: ^3.0.0
-  vm_service: ^14.2.5
+  web_socket_channel: ^2.4.0
+  vm_service: ^15.0.0
 
 dev_dependencies:
   flutter_test:
